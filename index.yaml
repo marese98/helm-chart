@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  ifsapp:
+  - apiVersion: v2
+    appVersion: 0.7.0
+    created: "2019-12-10T11:17:38.0524114+01:00"
+    description: A Helm chart for IFS Business System middle-tier services.
+    digest: 3d4b6c6a653527c27b526e0bebbaa954cabadc0d8c413ad8a4d4ef8f70f3d288
+    name: ifsapp
+    type: application
+    urls:
+    - https://github.com/marese98/helm-chart/ifsapp-0.1.1.tgz
+    version: 0.1.1
+generated: "2019-12-10T11:17:38.0484213+01:00"

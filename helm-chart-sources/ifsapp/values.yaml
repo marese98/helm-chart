@@ -1,0 +1,46 @@
+# Default values for ifsapp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+namespace: maresetest
+
+system_url: maresetest.pac01.k8s.ifsdevworld.com
+
+ifsconnect:
+  version: latest
+  replicaCount: 1
+
+ifsiam:
+  version: latest
+  replicaCount: 1
+
+ifsproxy:
+  version: latest
+  replicaCount: 1
+
+ifsweb:
+  version: latest
+  replicaCount: 1
+
+ifsweb_metasvc:
+  version: latest
+  replicaCount: 1
+
+odata_provider:
+  version: latest
+  replicaCount: 1        
+
+quota:
+  max_cpu: 40 
+  max_memory: 80G
+  max_pods: 20
+
+
+database:
+  ifssys_pwd: internal
+  host: 10.1.72.222
+  port: 1521
+  service_name: S1912
+
+image:
+  repository: rnddockerdev.azurecr.io

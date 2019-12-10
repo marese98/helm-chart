@@ -1,0 +1,82 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ifsconnect
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: ifsconnect
+    spec:
+      imagePullSecrets:
+      - name: ifsregistersecret
+      containers:
+      - name: ifsconnect
+        image: {{ .Values.image.repository }}/ifs/connect:latest
+        resources:
+          limits:
+           memory: "5G"
+           cpu: "1"
+          requests:
+           memory: "10M"
+           cpu: "50m"		   
+        ports:
+        - containerPort: 8080
+        - containerPort: 9990
+        - containerPort: 9100
+        env:
+        - name: IFS_JDBC_URL
+          value: "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST={{ .Values.database.host }})(PORT={{ .Values.database.port }})))(CONNECT_DATA=(SERVICE_NAME={{ .Values.database.service_name }})))"
+        - name: IFS_IFSSYS
+          value: ifssys
+        - name: IFS_IFSSYS_PWD
+          value: {{ .Values.database.ifssys_pwd }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ifsconnect
+  namespace: {{ .Values.namespace }}  
+spec:
+  type: ClusterIP
+  sessionAffinity: ClientIP
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+    name: http
+  - port: 9100
+    protocol: TCP
+    targetPort: 9100
+    name: nodeexporter
+  - port: 9990
+    protocol: TCP
+    targetPort: 9990
+    name: admin
+  selector:
+    app: ifsconnect
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ifsconnect
+  namespace: {{ .Values.namespace }}
+spec:
+  hosts:
+  - "ifsconnect"
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: ifsconnect
+        port:
+          number: 8080

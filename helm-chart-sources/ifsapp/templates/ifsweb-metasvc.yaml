@@ -1,0 +1,78 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ifsweb-metasvc
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.ifsweb_metasvc.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: ifsweb-metasvc
+    spec:
+      imagePullSecrets:
+      - name: ifsregistersecret
+      containers:
+      - name: ifsweb-metasvc
+        image: {{ .Values.image.repository }}/ifs/ifsweb-metasvc:{{ .Values.ifsweb_metasvc.version }}
+        resources:
+          limits:
+           memory: "5G"
+           cpu: "2"
+          requests:
+           memory: "10M"
+           cpu: "50m"
+        ports:
+        - containerPort: 8080
+        - containerPort: 8787
+        env:
+        - name: IFS_JDBC_URL
+          value: "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST={{ .Values.database.host }})(PORT={{ .Values.database.host }})))(CONNECT_DATA=(SERVICE_NAME={{ .Values.database.service_name }})))"
+        - name: IFS_DB_IFSSYS_USERNAME
+          value: "ifssys"
+        - name: IFS_DB_IFSSYS_PASSWORD
+          value: "{{ .Values.database.ifssys_pwd }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ifsweb-metasvc
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  sessionAffinity: ClientIP
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+    name: http
+  - port: 8787
+    protocol: TCP
+    targetPort: 8787
+    name: debug
+  selector:
+    app: ifsweb-metasvc
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ifsweb-metasvc
+  namespace: {{ .Values.namespace }}
+spec:
+  hosts:
+  - "ifsweb-metasvc"
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: ifsweb-metasvc
+        port:
+          number: 8080
+    websocketUpgrade: true

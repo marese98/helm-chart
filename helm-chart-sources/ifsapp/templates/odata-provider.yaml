@@ -1,0 +1,82 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: odata-provider
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.odata_provider.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: odata-provider
+    spec:
+      imagePullSecrets:
+      - name: ifsregistersecret
+      containers:
+      - name: odata-provider
+        image: {{ .Values.image.repository }}/ifs/odata-provider:{{ .Values.odata_provider.version }}
+        resources:
+          limits:
+           memory: "5G"
+           cpu: "2"
+          requests:
+           memory: "10M"
+           cpu: "50m"
+        ports:
+        - containerPort: 8080
+        - containerPort: 8787
+        env:
+        - name: IFS_JDBC_URL
+          value: "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST={{ .Values.database.host }})(PORT={{ .Values.database.port }})))(CONNECT_DATA=(SERVICE_NAME={{ .Values.database.service_name }})))"
+        - name: IFS_DB_IFSSYS_USERNAME
+          value: "ifssys"
+        - name: IFS_DB_IFSSYS_PASSWORD
+          value: "{{ .Values.database.ifssys_pwd }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: odata-provider
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  sessionAffinity: ClientIP
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+    name: http
+  - port: 8787
+    protocol: TCP
+    targetPort: 8787
+    name: debug
+  selector:
+    app: odata-provider
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: odata-provider
+  namespace: {{ .Values.namespace }}
+spec:
+  hosts:
+  - "odata-provider"
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: odata-provider
+        port:
+          number: 8080
+    headers:
+      request:
+        set:
+          Host: {{ .Values.system_url }}
+    websocketUpgrade: true

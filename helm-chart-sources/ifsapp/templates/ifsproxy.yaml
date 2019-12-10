@@ -1,0 +1,122 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: ifs-gateway
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "{{ .Values.system_url }}"
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ifsproxy
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.ifsproxy.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 10 
+  template:
+    metadata:
+      labels:
+        app: ifsproxy
+    spec:
+      imagePullSecrets:
+      - name: ifsregistersecret
+      containers:
+      - name: ifsproxy
+        image: {{ .Values.image.repository }}/ifs/ifsproxy:{{ .Values.ifsproxy.version }}
+        resources:
+          limits:
+           memory: "5G"
+           cpu: "1"
+          requests:
+           memory: "10M"
+           cpu: "50m"		   
+        ports:
+        - containerPort: 80
+        - containerPort: 8080
+        env:
+        - name: ENV_NAMESPACE
+          value: {{ .Values.namespace }}
+        - name: ENV_HOSTNAME
+          value: {{ .Values.system_url }}
+        - name: CLIENT_ID
+          value: IFS_bananas
+        - name: NATIVE_CLIENT_ID
+          value: IFS_native_bananas
+        - name: CLIENT_SECRET
+          value: THIS_IS_A_DUMMY_SECRET
+        - name: DISCOVERY_URL
+          value: http://{{ .Values.system_url }}/auth/realms/{{ .Values.namespace }}/.well-known/openid-configuration
+        - name: REDIRECT_URL
+          value: http://{{ .Values.system_url }}/redirect
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ifsproxy
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+    name: http
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+    name: admin
+  selector:
+    app: ifsproxy
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ifsproxy
+  namespace: {{ .Values.namespace }}
+spec:
+  hosts:
+  - "{{ .Values.system_url }}"
+  gateways:
+  - ifs-gateway.{{ .Values.namespace }}.svc.cluster.local
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: ifsproxy
+        port:
+          number: 80
+    websocketUpgrade: true
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ifsproxy-allow-ingressgateway
+  namespace: {{ .Values.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: ifsproxy
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 80
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+  policyTypes:
+  - Ingress
