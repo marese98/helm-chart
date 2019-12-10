@@ -4,7 +4,7 @@ metadata:
   name: ifsconnect
   namespace: {{ .Values.namespace }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.ifsconnect.replicaCount }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -19,7 +19,7 @@ spec:
       - name: ifsregistersecret
       containers:
       - name: ifsconnect
-        image: {{ .Values.image.repository }}/ifs/connect:latest
+        image: {{ .Values.imageCredentials.registry }}/ifs/connect:latest
         resources:
           limits:
            memory: "5G"

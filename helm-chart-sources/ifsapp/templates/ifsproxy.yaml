@@ -35,7 +35,7 @@ spec:
       - name: ifsregistersecret
       containers:
       - name: ifsproxy
-        image: {{ .Values.image.repository }}/ifs/ifsproxy:{{ .Values.ifsproxy.version }}
+        image: {{ .Values.imageCredentials.registry }}/ifs/ifsproxy:latest
         resources:
           limits:
            memory: "5G"

@@ -52,7 +52,7 @@ spec:
       - name: ifsregistersecret
       containers:
       - name: ifsiam
-        image: {{ .Values.image.repository }}/ifs/ifsiam:{{ .Values.ifsiam.version }}
+        image: {{ .Values.imageCredentials.registry }}/ifs/ifsiam:latest
         resources:
           limits:
            memory: "5G"

@@ -7,27 +7,21 @@ namespace: maresetest
 system_url: maresetest.pac01.k8s.ifsdevworld.com
 
 ifsconnect:
-  version: latest
   replicaCount: 1
 
 ifsiam:
-  version: latest
   replicaCount: 1
 
 ifsproxy:
-  version: latest
   replicaCount: 1
 
 ifsweb:
-  version: latest
   replicaCount: 1
 
 ifsweb_metasvc:
-  version: latest
   replicaCount: 1
 
 odata_provider:
-  version: latest
   replicaCount: 1        
 
 quota:
@@ -35,12 +29,13 @@ quota:
   max_memory: 80G
   max_pods: 20
 
-
 database:
-  ifssys_pwd: internal
   host: 10.1.72.222
   port: 1521
   service_name: S1912
+  ifssys_pwd: internal
 
-image:
-  repository: rnddockerdev.azurecr.io
+imageCredentials:
+  registry: tesalab3.azurecr.io
+  username: 16d8d9d4-d105-4db4-8584-beb4ea3560a1
+  password: 3ca2eeb5-bc7d-4a78-9f37-5884eab27c32
