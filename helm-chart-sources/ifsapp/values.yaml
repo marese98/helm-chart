@@ -22,7 +22,10 @@ ifsweb_metasvc:
   replicaCount: 1
 
 odata_provider:
-  replicaCount: 1        
+  replicaCount: 1
+
+ifsdoc:
+  replicaCount: 1     
 
 quota:
   max_cpu: 40 
